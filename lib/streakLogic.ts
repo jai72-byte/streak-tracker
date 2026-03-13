@@ -1,33 +1,19 @@
-import fs from "fs";
-import path from "path";
+import { Redis } from "@upstash/redis";
 
-export interface StudyData {
-  studyDates: string[];
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
+const KV_KEY = "studyDates";
+
+async function readDates(): Promise<string[]> {
+  const dates = await redis.get<string[]>(KV_KEY);
+  return dates ?? [];
 }
 
-const DATA_FILE = path.join(process.cwd(), "data", "study.json");
-
-function ensureDataFile(): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ studyDates: [] }), "utf-8");
-  }
-}
-
-function readData(): StudyData {
-  ensureDataFile();
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(raw) as StudyData;
-  } catch {
-    return { studyDates: [] };
-  }
-}
-
-function writeData(data: StudyData): void {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
+async function writeDates(dates: string[]): Promise<void> {
+  await redis.set(KV_KEY, dates);
 }
 
 export function getTodayString(): string {
@@ -68,25 +54,25 @@ export function calculateStreak(sortedDates: string[]): number {
   return streak;
 }
 
-export function getAllDates(): string[] {
-  return [...readData().studyDates].sort();
+export async function getAllDates(): Promise<string[]> {
+  return (await readDates()).sort();
 }
 
-export function hasStudiedToday(): boolean {
-  return readData().studyDates.includes(getTodayString());
+export async function hasStudiedToday(): Promise<boolean> {
+  const dates = await readDates();
+  return dates.includes(getTodayString());
 }
 
-export function markTodayStudied(): boolean {
-  const data = readData();
+export async function markTodayStudied(): Promise<boolean> {
+  const dates = await readDates();
   const today = getTodayString();
-  if (data.studyDates.includes(today)) return false;
-  data.studyDates.push(today);
-  writeData(data);
+  if (dates.includes(today)) return false;
+  await writeDates([...dates, today]);
   return true;
 }
 
-export function getStreakInfo() {
-  const sorted = getAllDates();
+export async function getStreakInfo() {
+  const sorted = await getAllDates();
   const streak = calculateStreak(sorted);
   const totalDays = sorted.length;
   const lastStudied =
@@ -94,6 +80,6 @@ export function getStreakInfo() {
   return { streak, totalDays, lastStudied };
 }
 
-export function getHistory(): string[] {
-  return getAllDates().reverse().map(formatDate);
+export async function getHistory(): Promise<string[]> {
+  return (await getAllDates()).reverse().map(formatDate);
 }
