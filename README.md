@@ -7,19 +7,19 @@ A full-stack web application built with **Next.js**, **TypeScript**, and **Tailw
 ## 🚀 Live Demo
 
 > Replace with your Vercel URL after deployment:
-> **https://your-project.vercel.app**
+> **https://streak-tracker-theta.vercel.app/**
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer      | Technology                                                    |
-| ---------- | ------------------------------------------------------------- |
-| Frontend   | Next.js 14 (App Router), React, TypeScript                    |
-| Styling    | Tailwind CSS                                                  |
-| Backend    | Next.js API Routes                                            |
-| Storage    | JSON file (`data/study.json`) — persistent across hot reloads |
-| Deployment | Vercel                                                        |
+| Layer      | Technology                                  |
+| ---------- | ------------------------------------------- |
+| Frontend   | Next.js 14 (App Router), React, TypeScript  |
+| Styling    | Tailwind CSS                                |
+| Backend    | Next.js API Routes                          |
+| Storage    | Upstash Redis (persistent, works on Vercel) |
+| Deployment | Vercel                                      |
 
 ---
 
@@ -29,78 +29,115 @@ A full-stack web application built with **Next.js**, **TypeScript**, and **Tailw
 
 - Node.js 18+
 - npm or yarn
+- [Upstash](https://upstash.com) account (free)
 
-### Local Development
+### 1. Clone the repository
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/jai72-byte/streak-tracker.git
 cd streak-tracker
-
-# 2. Install dependencies
-npm install
-
-# 3. Start the development server
-npm run dev
-
-# 4. Open in browser
-open http://localhost:3000
 ```
 
-The app will automatically create a `data/study.json` file on first run to store your study sessions.
-
-### Vercel Deployment
+### 2. Install dependencies
 
 ```bash
-# 1. Initialize git and push to GitHub
+npm install
+```
+
+### 3. Create an Upstash Redis database
+
+1. Go to [console.upstash.com](https://console.upstash.com) and sign up (free)
+2. Click **Create Database**, name it `streak-tracker`
+3. Once created, go to the database page
+4. Scroll to the **REST API** section and copy:
+   - `KV_REST_API_URL`
+   - `KV_REST_API_TOKEN`
+
+### 4. Add environment variables
+
+Create a `.env.local` file in the project root:
+
+```bash
+KV_REST_API_URL=https://fond-bear-70727.upstash.io
+KV_REST_API_TOKEN=gQAAAAAAARRHAAIncDI5NzYzOTc3ODdlNTY0NmNjOTA2MWJiMzgyN2M4OGJkNXAyNzA3Mjc
+```
+
+### 5. Start the development server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 🚀 Vercel Deployment
+
+### Step 1 — Push to GitHub
+
+```bash
 git init
 git add .
 git commit -m "Initial commit: Daily Learning Streak Tracker"
 git branch -M main
 git remote add origin https://github.com/jai72-byte/streak-tracker.git
 git push -u origin main
-
-# 2. Go to https://vercel.com and import your GitHub repo
-# 3. Click Deploy — no environment variables needed
-# 4. Share the live link!
 ```
+
+### Step 2 — Deploy on Vercel
+
+1. Go to [vercel.com](https://vercel.com) and sign in with GitHub
+2. Click **Add New Project** → import your `streak-tracker` repo
+3. Go to **Settings → Environment Variables** and add:
+
+```
+KV_REST_API_URL        =  https://fond-bear-70727.upstash.io
+KV_REST_API_TOKEN=gQAAAAAAARRHAAIncDI5NzYzOTc3ODdlNTY0NmNjOTA2MWJiMzgyN2M4OGJkNXAyNzA3Mjc
+
+
+4. Click **Deploy**
+5. Visit your live URL — done! ✅
+
+> After any future code changes, just `git push origin main` and Vercel redeploys automatically.
 
 ---
 
 ## 📁 Project Structure
 
 ```
+
 streak-tracker/
 ├── app/
-│   ├── layout.tsx               # Root layout with navbar & footer
-│   ├── page.tsx                 # Redirects / → /dashboard
-│   ├── globals.css              # Tailwind base styles
-│   ├── dashboard/
-│   │   └── page.tsx            # Dashboard — streak cards + study button
-│   ├── history/
-│   │   └── page.tsx             # Study history page
-│   └── api/
-│       ├── study/
-│       │   └── route.ts         # POST /api/study
-│       ├── streak/
-│       │   └── route.ts         # GET /api/streak
-│       └── history/
-│           └── route.ts         # GET /api/history
+│ ├── layout.tsx # Root layout with navbar & footer
+│ ├── page.tsx # Redirects / → /dashboard
+│ ├── globals.css # Tailwind base styles
+│ ├── dashboard/
+│ │ └── page.tsx # Dashboard — streak cards + study button
+│ ├── history/
+│ │ └── page.tsx # Study history page
+│ └── api/
+│ ├── study/
+│ │ └── route.ts # POST /api/study
+│ ├── streak/
+│ │ └── route.ts # GET /api/streak
+│ └── history/
+│ └── route.ts # GET /api/history
 ├── components/
-│   ├── StreakCard.tsx      # Stat display card (streak, days, last date)
-│   ├── StudyButton.tsx     # "I Studied Today" button with live feedback
-│   └── HistoryList.tsx     # Ordered list of all study dates
+│ ├── StreakCard.tsx # Stat display card (streak, days, last date)
+│ ├── StudyButton.tsx # "I Studied Today" button with live feedback
+│ └── HistoryList.tsx # Ordered list of all study dates
 ├── lib/
-│   └── streakLogic.ts        # Core streak logic + JSON file data layer
-├── data/
-│   └── study.json               # Auto-created on first run (gitignored)
+│ └── streakLogic.ts # Core streak logic + Upstash Redis data layer
+├── .env.local # Local env variables (gitignored)
 ├── .gitignore
 ├── next.config.js
 ├── tailwind.config.ts
 ├── tsconfig.json
 ├── package.json
 └── README.md
-```
+
+````
 
 ---
 
@@ -120,7 +157,7 @@ Mark today as a study day.
   "totalDays": 10,
   "lastStudied": "14 March 2026"
 }
-```
+````
 
 **Response (already marked) — `409 Conflict`:**
 
@@ -170,15 +207,13 @@ The streak is calculated in `lib/streakLogic.ts` using the `calculateStreak()` f
 
 ### Storage
 
-Study dates are saved as `YYYY-MM-DD` strings in `data/study.json`:
+Study dates are stored as a `string[]` array in Upstash Redis under the key `studyDates`:
 
 ```json
-{
-  "studyDates": ["2026-03-10", "2026-03-11", "2026-03-12"]
-}
+["2026-03-10", "2026-03-11", "2026-03-12"]
 ```
 
-The file is read fresh on every API request and written immediately after any change, ensuring data survives hot reloads in development.
+Every API request reads fresh from Redis and writes back immediately after any change, ensuring full persistence across serverless function instances on Vercel.
 
 ### Streak Calculation Rules
 
@@ -203,7 +238,7 @@ Streak resets = 1 ✅
 - ❌ Cannot mark study twice in one day (`409 Conflict`)
 - 🔥 Streak only grows if the previous day was also studied
 - 🔄 Skipping a day resets streak to 1
-- 📅 All study dates are permanently saved in history
+- 📅 All study dates are permanently saved in Upstash Redis
 
 ---
 
@@ -213,7 +248,7 @@ Streak resets = 1 ✅
 - **Study Button** — one-click session logging with instant success/error feedback
 - **History Page (`/history`)** — full list of all study dates, newest first
 - **Duplicate prevention** — same day cannot be logged twice
-- **Persistent storage** — data saved to `data/study.json`, survives server restarts
+- **Persistent storage** — data stored in Upstash Redis, survives server restarts and redeployments
 - **Responsive UI** — works on mobile and desktop
 - **Clean design** — Tailwind CSS with indigo/purple theme
 
